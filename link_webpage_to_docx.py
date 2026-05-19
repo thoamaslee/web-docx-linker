@@ -28,7 +28,8 @@ NS = {
 }
 
 for prefix, uri in NS.items():
-    ET.register_namespace(prefix if prefix != "rel" else "", uri)
+    if prefix != "rel":
+        ET.register_namespace(prefix, uri)
 
 
 def qn(name: str) -> str:
