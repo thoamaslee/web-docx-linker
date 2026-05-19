@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: web-docx-linker
+    env: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PUBLIC_DEPLOYMENT
+        value: "1"
