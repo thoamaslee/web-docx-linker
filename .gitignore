@@ -1,0 +1,8 @@
+.openai_api_key
+.venv/
+__pycache__/
+*.pyc
+jobs/
+web_ui.log
+web_ui.pid
+.DS_Store
