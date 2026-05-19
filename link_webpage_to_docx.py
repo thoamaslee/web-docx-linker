@@ -260,6 +260,12 @@ def copy_run_with_text(run: ET.Element, text: str, hyperlink_style: bool = False
             new_rpr.remove(old_style)
         style = ET.Element(qn("w:rStyle"), {qn("w:val"): "Hyperlink"})
         new_rpr.insert(0, style)
+        for old_color in list(new_rpr.findall(qn("w:color"))):
+            new_rpr.remove(old_color)
+        for old_underline in list(new_rpr.findall(qn("w:u"))):
+            new_rpr.remove(old_underline)
+        new_rpr.append(ET.Element(qn("w:color"), {qn("w:val"): "0563C1"}))
+        new_rpr.append(ET.Element(qn("w:u"), {qn("w:val"): "single"}))
     text_node = ET.SubElement(new_run, qn("w:t"))
     if text.startswith(" ") or text.endswith(" "):
         text_node.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
