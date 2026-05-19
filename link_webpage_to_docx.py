@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
-from xml.etree import ElementTree as ET
+from lxml import etree as ET
 
 NS = {
     "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
@@ -414,7 +414,7 @@ def read_relationships(docx_path: Path) -> ET.Element:
         try:
             xml_bytes = archive.read("word/_rels/document.xml.rels")
         except KeyError:
-            return ET.Element(f"{{{NS['rel']}}}Relationships")
+            return ET.Element(f"{{{NS['rel']}}}Relationships", nsmap={None: NS["rel"]})
     return ET.fromstring(xml_bytes)
 
 
