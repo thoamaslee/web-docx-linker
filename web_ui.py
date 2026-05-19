@@ -12,7 +12,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, Optional, Tuple
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from link_webpage_to_docx import process_docx_links
 
@@ -39,6 +39,12 @@ def linked_filename(name: str) -> str:
     path = Path(original)
     stem = path.stem or "document"
     return f"{stem}_linked.docx"
+
+
+def content_disposition(filename: str) -> str:
+    fallback = re.sub(r"[^A-Za-z0-9._-]+", "_", filename) or "download.docx"
+    encoded = quote(filename, safe="")
+    return f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{encoded}"
 
 
 def read_saved_api_key() -> str:
@@ -557,7 +563,7 @@ class WebDocxHandler(BaseHTTPRequestHandler):
         )
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Disposition", content_disposition(filename))
         self.send_header("Content-Length", str(file_path.stat().st_size))
         self.end_headers()
         with file_path.open("rb") as handle:
