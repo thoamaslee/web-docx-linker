@@ -34,6 +34,13 @@ def safe_filename(name: str) -> str:
     return name or "translated.docx"
 
 
+def linked_filename(name: str) -> str:
+    original = safe_filename(name)
+    path = Path(original)
+    stem = path.stem or "document"
+    return f"{stem}_linked.docx"
+
+
 def read_saved_api_key() -> str:
     if PUBLIC_DEPLOYMENT:
         return ""
@@ -384,7 +391,7 @@ def result_html(job_id: str, result: Dict[str, object], dry_run: bool) -> bytes:
     docx_button = (
         ""
         if dry_run
-        else f'<a class="button" href="/download/{escape(job_id)}/result.docx">Word 파일 다운로드</a>'
+        else f'<a class="button" href="/download/{escape(job_id)}/{escape(result.get("download_name", "result_linked.docx"))}">Word 파일 다운로드</a>'
     )
     return page(
         "처리 완료",
@@ -496,6 +503,7 @@ class WebDocxHandler(BaseHTTPRequestHandler):
         job_dir.mkdir(parents=True, exist_ok=True)
         input_docx = job_dir / safe_filename(file_item.filename)
         output_docx = job_dir / "result.docx"
+        download_name = linked_filename(file_item.filename)
         report_path = job_dir / "report.csv"
         with input_docx.open("wb") as handle:
             while True:
@@ -520,6 +528,7 @@ class WebDocxHandler(BaseHTTPRequestHandler):
             self.respond(HTTPStatus.OK, form_html(f"처리 중 오류가 발생했습니다: {exc}"))
             return
 
+        result["download_name"] = download_name
         self.respond(HTTPStatus.OK, result_html(job_id, result, dry_run))
 
     def handle_download(self, path: str) -> None:
@@ -528,10 +537,16 @@ class WebDocxHandler(BaseHTTPRequestHandler):
             self.respond(HTTPStatus.NOT_FOUND, form_html("다운로드 경로가 올바르지 않습니다."))
             return
         job_id, filename = parts[1], parts[2]
-        if not re.fullmatch(r"[a-f0-9]{32}", job_id) or filename not in {"result.docx", "report.csv"}:
+        if not re.fullmatch(r"[a-f0-9]{32}", job_id):
             self.respond(HTTPStatus.NOT_FOUND, form_html("다운로드 경로가 올바르지 않습니다."))
             return
-        file_path = JOBS_DIR / job_id / filename
+        is_report = filename == "report.csv"
+        is_docx = filename.endswith(".docx") and safe_filename(filename) == filename
+        if not is_report and not is_docx:
+            self.respond(HTTPStatus.NOT_FOUND, form_html("다운로드 경로가 올바르지 않습니다."))
+            return
+        stored_name = "report.csv" if is_report else "result.docx"
+        file_path = JOBS_DIR / job_id / stored_name
         if not file_path.exists():
             self.respond(HTTPStatus.NOT_FOUND, form_html("파일을 찾을 수 없습니다."))
             return
